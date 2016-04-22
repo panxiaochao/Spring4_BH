@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration >
+	<appenders>
+		<Console name="Console" target="SYSTEM_OUT">
+			<PatternLayout>
+				<Pattern>[BPMIS_V 4.0_PXC] [%p] %d - [%m] - %c %M %L%n</Pattern>
+			</PatternLayout>
+		</Console>
+		<RollingFile name="RollingFile" fileName="E:\log\bpmisV4.log"
+			filePattern="E:\log\bpmisV4-[%d{yyyy.MM.dd.}]-%i.log.zip" immediateFlush="false">
+			<PatternLayout>
+				<Pattern>[BPMIS_V 4.0_PXC] [%p] %d - [%m] - %c_%M_%L%n</Pattern>
+			</PatternLayout>
+			<SizeBasedTriggeringPolicy size="3M" />
+		</RollingFile>
+	</appenders>
+	<loggers>
+		<root level="info">
+			<appender-ref ref="RollingFile" />
+			<appender-ref ref="Console" />
+		</root>
+	</loggers>
+</configuration>

@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="
+        http://www.springframework.org/schema/beans     
+        http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context-4.2.xsd
+        http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop-4.2.xsd
+        http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx-4.2.xsd
+        http://www.springframework.org/schema/mvc 
+        http://www.springframework.org/schema/mvc/spring-mvc-4.2.xsd    
+        http://www.springframework.org/schema/util 
+        http://www.springframework.org/schema/util/spring-util-4.2.xsd
+        ">
+	<!-- <context:component-scan base-package="bpmis.pxc.system.controller.core" 
+		/> -->
+	<context:component-scan base-package="org.pxcbpmisframework.core.common.dao.impl" />
+	<context:component-scan base-package="bpmis.pxc.system.service.impl" />
+	<context:component-scan
+		base-package="org.pxcbpmisframework.core.common.service.impl" />
+
+	<!-- SpringContextHolder -->
+	<bean id="applicationContext" class="org.pxcbpmisframework.core.util.SpringContextHolder" />
+
+	<!-- properties -->
+	<context:property-placeholder
+		location="classpath:properties/database.properties" />
+
+	<!-- 数据源1 -->
+	<bean name="dataSource_bpmis40" class="org.apache.commons.dbcp.BasicDataSource">
+		<property name="driverClassName" value="${jdbc.driverClassName}" />
+		<property name="url" value="${jdbc.url4}" />
+		<property name="username" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+		<!-- 初始化连接大小 -->
+		<property name="initialSize" value="5" />
+		<!-- 连接池最小空闲 -->
+		<property name="minIdle" value="10" />
+		<!-- 连接池最大空闲 -->
+		<property name="maxIdle" value="20" />
+		<!-- 连接池最大使用连接数量 -->
+		<property name="maxActive" value="40" />				
+		<!-- 获取连接最大等待时间 -->
+		<property name="maxWait" value="60000" />
+		<!-- <property name="poolPreparedStatements" value="true" /> <property 
+			name="maxPoolPreparedStatementPerConnectionSize" value="33" /> -->
+		<property name="validationQuery" value="${jdbc.validationQuery}" />
+		<property name="testOnBorrow" value="false" />
+		<property name="testOnReturn" value="false" />
+		<property name="testWhileIdle" value="true" />
+
+		<!-- 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒 -->
+		<property name="timeBetweenEvictionRunsMillis" value="30000" />
+		<!-- 配置一个连接在池中最小生存的时间，单位是毫秒 -->
+		<property name="minEvictableIdleTimeMillis" value="25200000" />
+	</bean>
+
+	<!-- 配置数据源，proxool数据库连接池 -->
+    <bean name="dataSource_proxool" 
+        class="org.springframework.jdbc.datasource.DriverManagerDataSource" >
+        <property name="driverClassName" value="org.logicalcobwebs.proxool.ProxoolDriver" />
+        <!-- proxool配置文件中的别名要一致 -->
+        <property name="url" value="proxool.proxool_mysql" />
+    </bean>
+
+	<!-- 数据源集合 -->
+	<bean id="dataSource"
+		class="org.pxcbpmisframework.core.common.datasource.DynamicDataSource">
+		<property name="targetDataSources">
+			<map key-type="org.pxcbpmisframework.core.common.datasource.DataSourceType">
+				<entry key="dataSource_proxool" value-ref="dataSource_proxool" />
+				<!-- <entry key="dataSource_bpmis30" value-ref="dataSource_bpmis30" /> -->
+			</map>
+		</property>
+		<property name="defaultTargetDataSource" ref="dataSource_proxool" />
+	</bean>
+
+
+	<!-- JDBC配置 
+	<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+-->
+	<!-- JDBC配置-NameJdbc 
+	<bean id="namedParameterJdbcTemplate"
+		class="org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate">
+		<constructor-arg ref="dataSource" />
+	</bean>
+-->
+	<!-- JDBC配置-simpleJdbc  - 在spring 4.2.1中接口变了
+	<bean id="simpleJdbcTemplate" class="org.springframework.jdbc.core.simple.SimpleJdbcTemplate">
+		<constructor-arg ref="dataSource" />
+	</bean>
+	-->
+	<!-- org.springframework.orm.hibernate4.LocalSessionFactoryBean org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean -->
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="packagesToScan">
+			<list>
+				<value>bpmis.pxc.system.pojo</value>
+			</list>
+		</property>
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">${jdbc.hibernate.dialect}</prop>
+				<prop key="hibernate.hbm2ddl.auto">${jdbc.hibernate.hbm2ddl.auto}</prop>
+				<prop key="hibernate.show_sql">false</prop>
+				<prop key="hibernate.format_sql">true</prop>
+				<prop key="hibernate.temp.use_jdbc_metadata_defaults">false</prop>
+				<prop key="hibernate.jdbc.fetch_size">50</prop>
+				<prop key="hibernate.jdbc.batch_size">20</prop>
+				<prop key="hibernate.jdbc.use_scrollable_resultset">false</prop>
+			</props>
+		</property>
+	</bean>
+
+	<!--txAdvice> -->
+	<tx:advice id="txAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="save*" propagation="REQUIRED" />
+			<tx:method name="update*" propagation="REQUIRED" />
+			<tx:method name="delete*" propagation="REQUIRED" />
+			<tx:method name="logicDelete*" propagation="REQUIRED" />
+			<tx:method name="find*" propagation="REQUIRED" read-only="true" />
+			<tx:method name="get*" propagation="REQUIRED" read-only="true" />
+			<tx:method name="By*" propagation="REQUIRED" read-only="true" />
+			<tx:method name="*" read-only="true" />
+		</tx:attributes>
+	</tx:advice>
+
+	<!-- aop -->
+	<aop:config>
+		<aop:pointcut expression="execution (* bpmis.pxc.system.service.impl.*.*(..))"
+			id="services" />
+		<aop:advisor advice-ref="txAdvice" pointcut-ref="services" />
+	</aop:config>
+
+	<!-- transactionManager -->
+	<bean name="transactionManager"
+		class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory"></property>
+	</bean>
+	<tx:annotation-driven transaction-manager="transactionManager" />
+
+</beans>

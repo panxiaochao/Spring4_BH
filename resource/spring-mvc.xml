@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:p="http://www.springframework.org/schema/p" xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="
+        http://www.springframework.org/schema/beans     
+        http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context-4.2.xsd
+        http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop-4.2.xsd
+        http://www.springframework.org/schema/mvc 
+        http://www.springframework.org/schema/mvc/spring-mvc-4.2.xsd    
+        http://www.springframework.org/schema/util 
+        http://www.springframework.org/schema/util/spring-util-4.2.xsd
+        ">
+	<!-- 启用spring mvc 注解 -->
+	<context:annotation-config />
+	<!-- 默认的注解映射的支持 -->
+	<mvc:annotation-driven />
+	<context:component-scan base-package="bpmis.pxc.system.controller.core"
+		use-default-filters="false">
+		<context:include-filter type="annotation"
+			expression="org.springframework.stereotype.Controller" />
+	</context:component-scan>
+	<context:component-scan base-package="org.pxcbpmisframework.core.exception" />
+
+	<!-- 避免IE执行AJAX时,返回JSON出现下载文件 Spring4 之后改为MappingJackson2JsonView -->
+	<bean id="mappingJacksonHttpMessageConverter"
+		class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+		<property name="supportedMediaTypes">
+			<list>
+				<value>text/html;charset=UTF-8</value>
+				<value>text/plain;charset=UTF-8</value>
+				<value>apolication/json;charset=UTF-8</value>
+			</list>
+		</property>
+		<!-- <property name="objectMapper"> <bean class="org.springframework.http.converter.json.Jackson2ObjectMapperFactoryBean" 
+			p:autoDetectFields="false" p:autoDetectGettersSetters="false" p:annotationIntrospector-ref="jaxbAnnotationIntrospector" 
+			/> </property> -->
+	</bean>
+
+	<bean id="StringHttpMessageConverter"
+		class="org.springframework.http.converter.StringHttpMessageConverter">
+		<property name="supportedMediaTypes">
+			<list>
+				<value>text/html;charset=UTF-8</value>
+				<value>text/plain;charset=UTF-8</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="ResourceHttpMessageConverter"
+		class="org.springframework.http.converter.ResourceHttpMessageConverter" />
+
+	<!-- 启动Spring MVC的注解功能，完成请求和注解POJO的映射， 配置一个基于注解的定制的WebBindingInitializer，解决日期转换问题，方法级别的处理器映射 -->
+	<bean
+		class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter">
+		<property name="cacheSeconds" value="0" />
+		<property name="webBindingInitializer">
+			<bean class="org.pxcbpmisframework.core.interceptor.MyWebBinding" />
+		</property>	
+		<property name="messageConverters">
+			<list>
+				<ref bean="mappingJacksonHttpMessageConverter" />
+				<ref bean="StringHttpMessageConverter" />
+				<ref bean="ResourceHttpMessageConverter" />
+			</list>
+		</property>
+	</bean>
+	<!-- 根据order 的顺序排序 -->
+	<!-- 配置FreeMark视图 -->
+	<bean id="freeMarkerViewResolver"
+		class="org.springframework.web.servlet.view.freemarker.FreeMarkerViewResolver">
+		<property name="contentType" value="text/html;charset=UTF-8" />
+		<property name="viewClass"
+			value="org.springframework.web.servlet.view.freemarker.FreeMarkerView" />
+		<property name="viewNames" value="*.ftl" />
+		<property name="prefix" value="" />
+		<property name="suffix" value="" />
+		<property name="cache" value="true" />
+		<property name="exposeSessionAttributes" value="true" />
+		<property name="exposeRequestAttributes" value="true" />
+		<property name="exposeSpringMacroHelpers" value="true" />
+		<!-- 在页面中使用${rc.contextPath}就可获得contextPath -->
+		<property name="requestContextAttribute" value="req" />
+		<property name="order" value="0" />
+	</bean>
+	<!-- 关联以下FreeMarkerConfigurer配置 -->
+	<bean id="freemarkConfig"
+		class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+		<property name="location" value="classpath:properties/freemark.properties" />
+	</bean>
+	<!-- 关联以下FreeMarkerConfigurer配置 -->
+	<bean id="fmXmlEscape" class="freemarker.template.utility.XmlEscape" />
+	<!-- FreeMarkerConfigurer 配置 -->
+	<bean id="FreeMarkerConfigurer"
+		class="org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer">
+		<property name="templateLoaderPath" value="/WEB-INF/ftl/" />
+		<property name="defaultEncoding" value="UTF-8" />
+		<property name="freemarkerSettings" ref="freemarkConfig" />
+		<!--设置一些常用的全局变量 -->
+		<property name="freemarkerVariables">
+			<map>
+				<entry key="xml_escape" value-ref="fmXmlEscape" />
+			</map>
+		</property>
+	</bean>
+	<!-- 默认 JSP 视图解析器 在上边的解析错误时使用 (默认使用html)- -->
+	<bean
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="viewClass"
+			value="org.springframework.web.servlet.view.JstlView" />
+		<property name="contentType" value="text/html;charset=UTF-8" />
+		<property name="prefix" value="/webpage/" />
+		<property name="suffix" value=".jsp" />
+		<property name="order" value="1" />
+	</bean>
+
+	<!-- 定义国际化资源文件查找规则 ，各种messages.properties <bean id="messageSource" class="org.springframework.context.support.ResourceBundleMessageSource" 
+		p:basename="config.messages.messages"> </bean> -->
+
+	<!-- 控制上传文件大小 <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver" 
+		p:defaultEncoding="UTF-8"> <property name="maxUploadSize"> <value>104857600</value> 
+		</property> <property name="maxInMemorySize"> <value>4096</value> </property> 
+		</bean> -->
+
+	<!-- 异常处理类 <bean id="exceptionResolver" class="org.pxcbpmisframework.core.exception.MyExceptionHandler" 
+		/> -->
+	<bean id="exceptionResolver"
+		class="org.pxcbpmisframework.core.exception.GlobalExceptionResolver" />
+
+	<!-- 拦截器 -->
+	<mvc:interceptors>
+		<mvc:interceptor>
+			<mvc:mapping path="/**" />
+			<bean class="org.pxcbpmisframework.core.interceptor.EncodingInterceptor" />
+		</mvc:interceptor>
+		<mvc:interceptor>
+			<mvc:mapping path="/**" />
+			<bean class="org.pxcbpmisframework.core.interceptor.SystemInterceptor">
+				<property name="excludeUrls">
+					<list>
+						<value>/</value>
+					</list>
+				</property>
+				<property name="mappingURL" value=".*\.do*" />
+			</bean>
+		</mvc:interceptor>
+	</mvc:interceptors>
+
+	<!-- Spring4 之后的新特性 <mvc:status-controller path="/status" status-code="500" 
+		/> -->
+
+
+	<!--默认的注解映射的支持 这个得放在最后，不然 webBindingInitializer 会失效 -->
+	<mvc:annotation-driven />
+</beans>
